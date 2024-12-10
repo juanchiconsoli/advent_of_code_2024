@@ -1,7 +1,8 @@
 from collections import namedtuple
 from pathlib import Path
-from typing import List, Set
+from typing import Dict, List, Set, Tuple
 from rich import print
+from copy import deepcopy
 
 
 class OutOfGrid(Exception): ...
@@ -91,6 +92,23 @@ class Guard:
 
         return self.position
 
+    def get_state(self) -> Dict[str, Tuple]:
+
+        return {"position": self.position, "direction": self.direction}
+
+    def print_state(self):
+        print("Guard State")
+        print(self.position)
+        print(self.direction)
+
+
+def sum_vectors(coordinate: Coordinate, direction: Direction):
+
+    if len(coordinate) != len(direction):
+        raise ValueError
+
+    return Coordinate(coordinate.x + direction.dx, coordinate.y + direction.dy)
+
 
 class GridWalker:
 
@@ -98,42 +116,96 @@ class GridWalker:
         self.grid = grid
         self.guard = guard
 
+        self.inital_position = guard.position
+        self.inital_direction = guard.direction
+
     def get_guard_path(self):
 
-        initial_position = self.guard.position
-        next_step_coordinate = None
+        visited_states: Set[Coordinate] = set()
 
-        visited_coordinates: Set[Coordinate] = set()
+        visited_states.add((self.guard.position, self.guard.direction))
 
-        visited_coordinates.add(self.guard.position)
+        next_step_coordinate = self.guard.next_step_coordinate()
 
-        while next_step_coordinate != initial_position:
+        if not grid.is_coordinate_within_limits(next_step_coordinate):
+            self.reset_guard()
+
+            return visited_states
+
+        if self.is_obstacle(grid.get_coordinate_character(next_step_coordinate)):
+            self.guard.change_direction()
+
+        self.guard.walk()
+
+        while (self.guard.position, self.guard.direction) not in visited_states:
             next_step_coordinate = self.guard.next_step_coordinate()
 
             if not grid.is_coordinate_within_limits(next_step_coordinate):
-                visited_coordinates.add(self.guard.position)
-                return visited_coordinates
+                visited_states.add((self.guard.position, self.guard.direction))
+                self.reset_guard()
+
+                return visited_states
 
             if self.is_obstacle(grid.get_coordinate_character(next_step_coordinate)):
                 self.guard.change_direction()
 
-            visited_coordinates.add(self.guard.position)
+            visited_states.add((self.guard.position, self.guard.direction))
 
             self.guard.walk()
+
+        self.reset_guard()
+
+        return visited_states
 
     def is_obstacle(self, character: str):
         return character == "#"
 
-    def count_guard_positions_in_grid(self):
+    def reset_guard(self):
+        self.guard.position = self.inital_position
+        self.guard.direction = self.inital_direction
 
-        count = 0
+    def find_loop_positions(self):
 
-        for x in range(self.grid.x_max):
-            for y in range(self.grid.y_max):
-                if self.grid.coordinates[x][y] == Guard.path_marker:
-                    count += 1
+        possible_positions = set()
+        directions = [
+            Direction(-1, 0),
+            Direction(0, 1),
+            Direction(1, 0),
+            Direction(0, -1),
+        ]
 
-        return count
+        visited_states = self.get_guard_path()
+
+        visited_coordinates = {x[0] for x in visited_states}
+
+        for coordinate in visited_coordinates:
+            for direction in directions:
+                potential_obstacle_coordinate: Coordinate = sum_vectors(
+                    coordinate, direction
+                )
+
+                if (
+                    self.grid.is_coordinate_within_limits(potential_obstacle_coordinate)
+                    and self.grid.get_coordinate_character(
+                        potential_obstacle_coordinate
+                    )
+                    == "."
+                ):
+                    temp_grid = Grid(self.grid.coordinates)
+                    temp_grid.mark_character(
+                        potential_obstacle_coordinate, character="#"
+                    )
+
+                    grid_walker = GridWalker(grid=temp_grid, guard=self.guard)
+
+                    new_visited_coordinates = grid_walker.get_guard_path()
+
+                    if len(new_visited_coordinates) < len(
+                        visited_coordinates
+                    ):  # Loop detected
+                        possible_positions.add(potential_obstacle_coordinate)
+
+        return possible_positions
 
 
 def get_guard_in_grid(grid: Grid):
@@ -182,8 +254,14 @@ if __name__ == "__main__":
 
     print(f"Guard Initial Direction - {guard.direction}")
 
-    visited_coordinates = lab_map_walker.get_guard_path()
+    visited_states = list(lab_map_walker.get_guard_path())
 
-    guard_positions = len(visited_coordinates)
+    positions = list({x[0] for x in visited_states})
+
+    guard_positions = len(positions)
 
     print(f"The guard passed through {guard_positions} distinct positions in the grid")
+
+    possible_loop_positions = lab_map_walker.find_loop_positions()
+
+    print(f"{len(possible_loop_positions)}")
