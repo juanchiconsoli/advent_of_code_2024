@@ -125,7 +125,9 @@ if __name__ == "__main__":
     wrong_updates_ordered = []
 
     for wrong_update in wrong_updates:
-        ordered_update = order_wrong_update(rules, wrong_update) 
+        ordered_update = order_wrong_update(rules, wrong_update)
         wrong_updates_ordered.append(ordered_update[findMiddle(ordered_update)])
 
-    print(f"Sum of middles for wrong updates ordered is now {sum(x for x in wrong_updates_ordered)}")
+    print(
+        f"Sum of middles for wrong updates ordered is now {sum(x for x in wrong_updates_ordered)}"
+    )
