@@ -1,6 +1,6 @@
 from collections import namedtuple
 from pathlib import Path
-from typing import List
+from typing import List, Set
 from rich import print
 
 
@@ -98,33 +98,28 @@ class GridWalker:
         self.grid = grid
         self.guard = guard
 
-    def mark_guard_path(self):
+    def get_guard_path(self):
 
-        self.grid.mark_character(self.guard.position, character=Guard.path_marker)
+        initial_position = self.guard.position
+        next_step_coordinate = None
 
-        try:
-            while 1:
-                next_step_coordinate = self.guard.next_step_coordinate()
+        visited_coordinates: Set[Coordinate] = set()
 
-                if not grid.is_coordinate_within_limits(next_step_coordinate):
-                    self.grid.mark_character(
-                        self.guard.position, character=Guard.path_marker
-                    )
-                    raise OutOfGrid("Guard left the grid")
+        visited_coordinates.add(self.guard.position)
 
-                next_character = grid.get_coordinate_character(next_step_coordinate)
+        while next_step_coordinate != initial_position:
+            next_step_coordinate = self.guard.next_step_coordinate()
 
-                if self.is_obstacle(next_character):
-                    self.guard.change_direction()
+            if not grid.is_coordinate_within_limits(next_step_coordinate):
+                visited_coordinates.add(self.guard.position)
+                return visited_coordinates
 
-                self.grid.mark_character(
-                    self.guard.position, character=Guard.path_marker
-                )
+            if self.is_obstacle(grid.get_coordinate_character(next_step_coordinate)):
+                self.guard.change_direction()
 
-                self.guard.walk()
+            visited_coordinates.add(self.guard.position)
 
-        except OutOfGrid:
-            print("Guard is finally out of the grid")
+            self.guard.walk()
 
     def is_obstacle(self, character: str):
         return character == "#"
@@ -187,8 +182,8 @@ if __name__ == "__main__":
 
     print(f"Guard Initial Direction - {guard.direction}")
 
-    lab_map_walker.mark_guard_path()
+    visited_coordinates = lab_map_walker.get_guard_path()
 
-    guard_positions = lab_map_walker.count_guard_positions_in_grid()
+    guard_positions = len(visited_coordinates)
 
     print(f"The guard passed through {guard_positions} distinct positions in the grid")
