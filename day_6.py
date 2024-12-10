@@ -78,7 +78,7 @@ class Guard:
             self.direction = Direction(0, -1)
         else:
             raise ValueError("Invalid Direction")
-        
+
     def next_step_coordinate(self):
         return Coordinate(
             self.position.x + self.direction.dx, self.position.y + self.direction.dy
