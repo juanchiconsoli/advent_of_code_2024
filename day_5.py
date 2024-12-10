@@ -75,4 +75,6 @@ if __name__ == "__main__":
 
     sum_of_middles = sum(x for x in valid_updates)
 
-    print(f"There were {len(valid_updates)} valid updates in ")
+    print(
+        f"There were {len(valid_updates)} valid updates in a list of {len(updates)} updates. The sum of the middle pages for the valid updates is {sum_of_middles}"
+    )
