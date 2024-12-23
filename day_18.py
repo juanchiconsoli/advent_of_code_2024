@@ -1,4 +1,4 @@
-from heapq import heappop
+from heapq import heappop, heappush
 from pathlib import Path
 from typing import List, NamedTuple
 
@@ -38,31 +38,47 @@ if __name__ == "__main__":
 
     corrupted_blocks = parse_input(Path("./day_18_input.txt"))
 
-    initial_state = State(cost=0, position=START)
+    fallen_blocks = []
 
-    heap = [initial_state]
+    for i, coord in enumerate(corrupted_blocks):
 
-    visited = set()
+        if 0 <= coord.row <= ROW_MAX and 0 <= coord.col <= COL_MAX:
+            fallen_blocks.append(coord)
 
-    best = None
+        initial_state = State(cost=0, position=START)
 
-    while heap:
-        current_state = heappop(heap)
+        heap = [initial_state]
 
-        if current_state.position == END and best == None:
-            best = current_state.cost
-        if current_state.position in visited:
-            continue
-        visited.add(current_state.position)
+        visited = set()
 
-        for dir in DIRECTIONS:
-            next_position = current_state.position + dir
-            if (
-                0 <= next_position.row <= ROW_MAX
-                and 0 <= next_position.col <= COL_MAX
-                and next_position not in corrupted_blocks[:CORRUPTED_BLOCKS]
-            ):
-                next_state = State(cost=current_state.cost + 1, position=next_position)
-                heap.append(next_state)
+        best = None
+        ok = False
 
-    print(best)
+        while heap:
+            current_state = heappop(heap)
+
+            if current_state.position == END:
+                best = current_state.cost
+                if i == 1023:
+                    print(best)
+                ok = True
+                break
+            if current_state.position in visited:
+                continue
+            visited.add(current_state.position)
+
+            for dir in DIRECTIONS:
+                next_position = current_state.position + dir
+                if (
+                    0 <= next_position.row <= ROW_MAX
+                    and 0 <= next_position.col <= COL_MAX
+                    and next_position not in fallen_blocks
+                ):
+                    next_state = State(
+                        cost=current_state.cost + 1, position=next_position
+                    )
+                    heappush(heap, next_state)
+
+        if not ok:
+            print(coord)
+            break
