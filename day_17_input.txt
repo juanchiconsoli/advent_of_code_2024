@@ -1,0 +1,26 @@
+Register A: 22817223
+Register B: 0
+Register C: 0
+
+Program: 2,4,1,2,7,5,4,5,0,3,1,7,5,5,3,0
+
+b = a % 8
+b = b xor 2
+c = a >> b
+b = b xor c
+a = a >> 3
+b = b xor 7
+out (b % 8)
+if a != 0: jump 0
+
+a = 0
+
+b = 0
+b = 2
+c = 0
+b = 2 xor 0 = 2
+a = 0 >> 3 = 0
+b = b xor 7 = 5
+5
+
+a = 1
